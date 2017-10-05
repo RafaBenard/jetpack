@@ -1,9 +1,9 @@
 <?php
 
-new WPCOM_JSON_API_Get_Comments_Tree_Endpoint( array(
+new WPCOM_JSON_API_Get_Comments_Tree_v1_1_Endpoint ( array(
 	'description' => 'Get a comments tree for site.',
-	'max_version' => '1',
-	'new_version' => '1.1',
+	'min_version' => '1.1',
+	'max_version' => '1.1',
 	'group'       => 'comments-tree',
 	'stat'        => 'comments-tree:1',
 
@@ -27,7 +27,7 @@ new WPCOM_JSON_API_Get_Comments_Tree_Endpoint( array(
 	'example_request' => 'https://public-api.wordpress.com/rest/v1/sites/en.blog.wordpress.com/comments-tree?status=approved'
 ) );
 
-class WPCOM_JSON_API_Get_Comments_Tree_Endpoint extends WPCOM_JSON_API_Endpoint {
+class WPCOM_JSON_API_Get_Comments_Tree_v1_1_Endpoint extends WPCOM_JSON_API_Get_Comments_Tree_Endpoint {
 	/**
 	 * Retrieves a list of comment data for a given site.
 	 *
@@ -85,98 +85,5 @@ class WPCOM_JSON_API_Get_Comments_Tree_Endpoint extends WPCOM_JSON_API_Endpoint 
 			'pingbacks_count' => $this->get_site_tree_total_count( $status, 'pingback' ),
 			'pingbacks_tree' => $pingbacks,
 		);
-	}
-
-	/**
-	 * Retrieves a total count of comments by type for the given site.
-	 *
-	 * @param string $status Filter by status: all, approved, pending, spam or trash.
-	 * @param string $type Comment type: 'trackback', 'pingback', or 'comment'.
-	 *
-	 * @return int Total count of comments for a site.
-	 */
-	function get_site_tree_total_count( $status, $type ) {
-		global $wpdb;
-		$db_status = $this->get_comment_db_status( $status );
-		$type = $this->get_sanitized_comment_type( $type );
-		// An empty value in the comments_type column denotes a regular comment.
-		$type = ( 'comment' === $type ) ? '' : $type;
-
-		$result = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(1) " .
-				"FROM $wpdb->comments AS comments " .
-				"INNER JOIN $wpdb->posts AS posts ON comments.comment_post_ID = posts.ID " .
-				"WHERE comment_type = %s AND ( %s = 'all' OR comment_approved = %s )",
-				$type, $db_status, $db_status
-			)
-		);
-		return intval( $result );
-	}
-
-	/**
-	 * Ensure a valid status is converted to a database-supported value if necessary.
-	 *
-	 * @param string $status Should be one of: all, approved, pending, spam or trash.
-	 *
-	 * @return string Corresponding value that exists in database.
-	 */
-	function get_comment_db_status( $status ) {
-		if ( 'approved' === $status ) {
-			return '1';
-		}
-		if ( 'pending' === $status ) {
-			return '0';
-		}
-		return $status;
-	}
-
-	/**
-	 * Determine if the passed comment status is valid or not.
-	 *
-	 * @param string $status
-	 *
-	 * @return boolean
-	 */
-	function validate_status_param( $status ) {
-		return in_array( $status, array( 'all', 'approved', 'pending', 'spam', 'trash' ) );
-	}
-
-	/**
-	 * Sanitize a given comment type.
-	 *
-	 * @param string Comment type: can be 'trackback', 'pingback', or 'comment'.
-	 *
-	 * @return string Sanitized comment type.
-	 */
-	function get_sanitized_comment_type( $type = 'comment' ) {
-		if ( in_array( $type, array( 'trackback', 'pingback', 'comment' ) ) ) {
-			return $type;
-		}
-		return 'comment';
-	}
-
-	/**
-	 * Endpoint callback for /sites/%s/comments-tree
-	 *
-	 * @param string $path
-	 * @param int    $blog_id
-	 *
-	 * @return array Site tree results by status.
-	 */
-	function callback( $path = '', $blog_id = 0 ) {
-		$blog_id = $this->api->switch_to_blog_and_validate_user( $this->api->get_blog_id( $blog_id ) );
-		if ( is_wp_error( $blog_id ) ) {
-			return $blog_id;
-		}
-
-		$args = $this->query_args();
-		$comment_status = empty( $args['status'] ) ? 'all' : $args['status'];
-
-		if ( ! $this->validate_status_param( $comment_status ) ) {
-			return new WP_Error( 'invalid_status', "Invalid comment status value provided: '$comment_status'.", 400 );
-		}
-
-		return $this->get_site_tree( $comment_status );
 	}
 }
