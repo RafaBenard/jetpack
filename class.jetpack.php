@@ -6642,6 +6642,11 @@ p {
 			'featured-content',
 			'site_logo',
 			'jetpack_dismissed_notices',
+			'pwa_cache_assets',
+			'pwa_web_push',
+			'pwa_inline_scripts_and_styles',
+			'pwa_remove_remote_fonts',
+			'pwa_show_network_status',
 		);
 
 		// Flag some Jetpack options as unsafe
